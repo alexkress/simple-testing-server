@@ -35,6 +35,9 @@ More generally, ```GET http://localhost:<PORT>/<model_name>``` will return an ``
 with content taken from a file called ```<model_name>.json``` placed in the same folder as the script.
 BYO example json files. (use the ```--path``` options if these files are in a different directory)
 
+if a file ```<model_name>.json``` does not exist, but a directory with the name ```<model_name>``` does. The code will list all files with .json
+extension and return a json list with the file names with the .json extension removed
+
 ### POST
 
 To make a post request with a successfull (200) response:
@@ -64,6 +67,14 @@ The result is parsed and returned back as JSON
        "p1":"v1"
     }
 
+	
+Persistence
+---
+
+All post requests will be persisted on disk. For example if a post is made to http://localhost:<PORT>/abc, the code will try to create a file
+[random number].json with the content of what POST request also sends back to the client.
+
+The client can then later request http://localhost:<PORT>/abc/[same random number] to get back this result
 
 There you have it.
 
