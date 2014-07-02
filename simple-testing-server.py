@@ -2,6 +2,9 @@
 from BaseHTTPServer import HTTPServer
 from BaseHTTPServer import BaseHTTPRequestHandler
 import cgi
+import random
+import os.path
+from os import listdir
 
 
 PORT = 8003
@@ -10,6 +13,8 @@ FILE_PREFIX = ""
 if __name__ == "__main__":
     try:
         import argparse
+
+        #random.seed()
 
         parser = argparse.ArgumentParser(description='A simple fake server for testing your API client.')
         parser.add_argument('-p', '--port', type=int, dest="PORT",
@@ -40,13 +45,29 @@ class JSONRequestHandler (BaseHTTPRequestHandler):
         # send a blank line to end headers:
         self.wfile.write("\n")
 
-        try:
-            output = open(FILE_PREFIX + "/" + self.path[1:] + ".json", 'r').read()
-        except Exception:
-            output = "{'error': 'Could not find file " + self.path[1:] + ".json'" + "}"
+        folder_path=FILE_PREFIX + "/" + self.path[1:]
+        file_path=folder_path+ ".json"
+
+        if os.path.isfile(file_path):
+            try:
+                output = open(file_path, 'r').read()
+            except Exception:
+                output = "{'error': 'Could not find file " + self.path[1:] + ".json'" + "}"
+        elif os.path.isdir:
+            only_files = [ f for f in listdir(folder_path) if os.path.isfile(os.path.join(folder_path,f)) ]
+            output='[\n'
+            is_first=True
+            for f in only_files:
+                if os.path.splitext(f)[1] == '.json': output+=('' if is_first else ',\n')+'%s' % (os.path.splitext(f)[0])
+                is_first=False
+            output+=']\n'
+
         self.wfile.write(output)
 
     def do_POST(self):
+
+        error=''
+        
         if self.path == "/success":
             response_code = 200
         elif self.path == "/error":
@@ -66,7 +87,6 @@ class JSONRequestHandler (BaseHTTPRequestHandler):
             
             self.end_headers()
 
-
             form = cgi.FieldStorage(
                     fp=self.rfile, 
                     headers=self.headers,
@@ -74,19 +94,31 @@ class JSONRequestHandler (BaseHTTPRequestHandler):
                                      'CONTENT_TYPE':self.headers['Content-Type'],
                                      })
 
-            self.wfile.write('{\n')
-            first_key=True
+            object_id = random.randint(0, 500000000)
+
+            try:
+                #also write to disk
+                file_path=FILE_PREFIX + "/" + self.path[1:] +"/" + str(object_id) + ".json"
+                disk_storage = open (file_path, 'a')
+            except Exception as e:
+                error='can\'t create file at %s' % (file_path)
+                raise
+
+            self.wfile.write('{\n"id":%i' % object_id)
+            disk_storage.write('{\n"id"=%i' % object_id)
             for field in form.keys():
-                    if not first_key:
-                        self.wfile.write(',\n')
-                    else:
-                        self.wfile.write('\n')
-                        first_key=False
-                    self.wfile.write('"%s":"%s"' % (field, form[field].value))
+                    json_line=',\n"%s":"%s"' % (field, form[field].value)
+                    self.wfile.write(json_line)
+                    disk_storage.write(json_line)
             self.wfile.write('\n}')
+            disk_storage.write('\n}')
+            disk_storage.close
+
                             
         except Exception as e:
             self.send_response(500)
+            self.wfile.write(error)
+            raise
 
 
 server = HTTPServer(("localhost", PORT), JSONRequestHandler)
