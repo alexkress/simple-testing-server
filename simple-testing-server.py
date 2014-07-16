@@ -53,14 +53,18 @@ class JSONRequestHandler (BaseHTTPRequestHandler):
                 output = open(file_path, 'r').read()
             except Exception:
                 output = "{'error': 'Could not find file " + self.path[1:] + ".json'" + "}"
-        elif os.path.isdir:
+        elif os.path.isdir(folder_path):
             only_files = [ f for f in listdir(folder_path) if os.path.isfile(os.path.join(folder_path,f)) ]
             output='[\n'
             is_first=True
             for f in only_files:
-                if os.path.splitext(f)[1] == '.json': output+=('' if is_first else ',\n')+'%s' % (os.path.splitext(f)[0])
-                is_first=False
+                if os.path.splitext(f)[1] == '.json':
+                    output+=('' if is_first else ',\n')+'%s' % (os.path.splitext(f)[0])
+                    is_first=False
             output+=']\n'
+        else:
+            self.send_response(404)
+            output=''
 
         self.wfile.write(output)
 
