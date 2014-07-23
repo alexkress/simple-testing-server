@@ -38,21 +38,17 @@ class JSONRequestHandler (BaseHTTPRequestHandler):
 
     def do_GET(self):
 
-        #send response code:
-        self.send_response(200)
-        #send headers:
-        self.send_header("Content-type", "application/json")
-        # send a blank line to end headers:
-        self.wfile.write("\n")
-
         folder_path=FILE_PREFIX + "/" + self.path[1:]
         file_path=folder_path+ ".json"
+        
+        http_code=200
 
         if os.path.isfile(file_path):
             try:
                 output = open(file_path, 'r').read()
             except Exception:
                 output = "{'error': 'Could not find file " + self.path[1:] + ".json'" + "}"
+                http_code=404
         elif os.path.isdir(folder_path):
             only_files = [ f for f in listdir(folder_path) if os.path.isfile(os.path.join(folder_path,f)) ]
             output='[\n'
@@ -63,8 +59,16 @@ class JSONRequestHandler (BaseHTTPRequestHandler):
                     is_first=False
             output+=']\n'
         else:
-            self.send_response(404)
-            output=''
+            http_code=404
+            output='{"error":"path does not exist"}'
+
+
+        #send response code:
+        self.send_response(http_code)
+        #send headers:
+        self.send_header("Content-type", "application/json")
+        # send a blank line to end headers:
+        self.wfile.write("\n")
 
         self.wfile.write(output)
 
