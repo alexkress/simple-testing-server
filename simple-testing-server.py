@@ -39,15 +39,33 @@ class JSONRequestHandler (BaseHTTPRequestHandler):
     def do_GET(self):
 
         folder_path=FILE_PREFIX + "/" + self.path[1:]
-        file_path=folder_path+ ".json"
+        response_content_type="Content-type", "application/json"
         
         http_code=200
 
-        if os.path.isfile(file_path):
+        is_file=True
+        file_path=folder_path
+        if os.path.isfile(folder_path+ ".json"):
+	        file_path=folder_path+ ".json"
+        elif os.path.isfile(file_path):
+			#figure out content type
+			extension=os.path.splitext(file_path)[1]
+			if extension==".html" or extension==".htm":
+				response_content_type="text/html"
+			elif extension==".css":
+				response_content_type="text/css"
+			elif extension==".js":
+				response_content_type="text/javascript"
+			else:
+				response_content_type="text/plain"
+        else:
+		    is_file=False
+		
+        if is_file:
             try:
                 output = open(file_path, 'r').read()
             except Exception:
-                output = "{'error': 'Could not find file " + self.path[1:] + ".json'" + "}"
+                output = "{'error': 'Could not find file " + file_path + "}"
                 http_code=404
         elif os.path.isdir(folder_path):
             only_files = [ f for f in listdir(folder_path) if os.path.isfile(os.path.join(folder_path,f)) ]
@@ -66,7 +84,7 @@ class JSONRequestHandler (BaseHTTPRequestHandler):
         #send response code:
         self.send_response(http_code)
         #send headers:
-        self.send_header("Content-type", "application/json")
+        self.send_header("Content-type", response_content_type)
         # send a blank line to end headers:
         self.wfile.write("\n")
 
