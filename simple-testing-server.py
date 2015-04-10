@@ -113,7 +113,7 @@ class JSONRequestHandler (BaseHTTPRequestHandler):
                 raise
 
             self.wfile.write('{\n"id":%i' % object_id)
-            disk_storage.write('{\n"id"=%i' % object_id)
+            disk_storage.write('{\n"id":%i' % object_id)
             for field in form.keys():
                     json_line=',\n"%s":"%s"' % (field, form[field].value)
                     self.wfile.write(json_line)
